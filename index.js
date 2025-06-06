@@ -1,27 +1,38 @@
-console.log("🟢 Server code loaded");
-
-const express = require('express');
-const bodyParser = require('body-parser');
+const express = require("express");
+const axios = require("axios");
+const bodyParser = require("body-parser");
 
 const app = express();
-const port = process.env.PORT || 3000;
-
-// Handle both JSON and URL-encoded form data
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
 
-// Root check
-app.get('/', (req, res) => {
-  res.send('GPT SMS Proxy is running.');
+// ✅ Paste your Make webhook here
+const MAKE_WEBHOOK_URL = "https://hook.us2.make.com/4ecsceyffq63ccy2htwg1lf36u73lhpx";
+
+app.post("/relay", async (req, res) => {
+  const smsData = {
+    from: req.body.From,
+    to: req.body.To,
+    body: req.body.Body,
+    messageSid: req.body.MessageSid
+  };
+
+  console.log("📥 Incoming SMS:", smsData);
+
+  try {
+    await axios.post(MAKE_WEBHOOK_URL, smsData);
+    console.log("✅ Forwarded to Make");
+    res.status(200).send("<Response></Response>");
+  } catch (error) {
+    console.error("❌ Error forwarding to Make:", error.message);
+    res.status(500).send("Error");
+  }
 });
 
-// Minimal Twilio relay route
-app.post('/relay', (req, res) => {
-  console.log('📩 Twilio webhook received:', req.body);
-  res.status(200).send('OK');
+app.get("/", (req, res) => {
+  res.send("SMS Proxy Server is running.");
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`🚀 Proxy server running on port ${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server is listening on port ${PORT}`);
 });
